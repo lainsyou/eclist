@@ -1,0 +1,123 @@
+<html lang="ja">
+<body>
+1439 * 2331想定<br/>
+<input type="file" id="image_zone" multiple >
+<div id="output"></div>
+<canvas id="canvas">canvas unsupported</canvas>
+
+<script src='https://unpkg.com/tesseract.js@v2.0.2/dist/tesseract.min.js'></script>
+<script>
+const imageZone = document.getElementById('image_zone')
+imageZone.addEventListener('change', resizePinnedImage, false)
+
+async function resizePinnedImage(e) {
+	document.getElementById('output').innerText += e.target.files.length + "/";
+				
+	var array = [];
+	for (const file of e.target.files) {
+		if (!file.type.match('image.*')) { continue }
+		
+		var image = await loadFile(file);
+		image = grayscale(image);
+		
+		await Tesseract.recognize(
+			image,
+			'jpn',
+			{
+				logger: m => console.log(m),
+				tessedit_pageseg_mode: 5,
+			}).then(({ data: { text } }) => {
+				var blob = new Blob([file], { type: file.type });
+				array.push({name: text.replaceAll(" ",""), file: blob});
+				document.getElementById('output').innerText += "o";
+			}
+		);
+	}
+	
+	array.sort((a, b) => {
+		if (a.name > b.name) {
+			return 1;
+		} else {
+			return -1;
+		}
+	});
+	console.log(array);
+	
+	var cnt = 1;
+	for (const item of array) {
+		handleDownload(item.file, cnt++);
+	}
+}
+
+function handleDownload(blob, name) {
+	// chrome,firefox
+	var a = document.createElement('a');
+	a.download = name;
+	a.href = URL.createObjectURL(blob);
+
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+}
+
+function loadFile(file) {
+	return new Promise((resolve, reject) => {
+		// ファイル読込
+		const reader = new FileReader();
+		reader.onload = () => {
+			// 読込
+			const result = reader.result;
+			if (!result) {
+				reject("FileReader failed.");
+				return;
+			}
+
+			// 画像表示
+			const img = new Image();
+			img.onload = () => resolve(img);
+			img.onerror = (e) => reject(e);
+			img.src = result;
+		}
+		reader.readAsDataURL(file);
+	});
+}
+
+function grayscale(img) {
+	//var canvas = document.createElement("canvas");
+	var canvas = document.getElementById("canvas");
+	var ctx = canvas.getContext("2d");
+	var top = 0;
+	var left = 0;
+	var width = canvas.width = img.width;
+	var height = canvas.height = img.height;
+
+	ctx.drawImage(img, 0, 0, width, height);
+
+	var src = ctx.getImageData(50, 40, 800, 90)
+	var dst = ctx.createImageData(800, 90);
+
+	for (var i = 0; i < height; i++) {
+		for (var j = 0; j < width; j++) {
+			var pix = (i*width + j) * 4;
+
+			/* Gray */
+			var gray = 0.299 * src.data[pix] + 0.587 * src.data[pix+1] + 0.114 * src.data[pix+2];
+
+			for (var k = 0; k < 3; k++) {
+				dst.data[pix+k] = src.data[pix+k] = gray;
+			}
+
+			dst.data[pix+3] = src.data[pix+3];
+		}
+	}
+
+	canvas.width = 800;
+	canvas.height = 90;
+	ctx.putImageData(dst, 0, 0);
+
+	return canvas.toDataURL();
+}
+
+</script>
+</body>
+</html>
