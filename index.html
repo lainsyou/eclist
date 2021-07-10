@@ -1,6 +1,6 @@
 <html lang="ja">
 <body>
-1439 * 2331‘z’è<br/>
+1439 * 2331æƒ³å®š<br/>
 <input type="file" id="image_zone" multiple >
 <div id="output"></div>
 <canvas id="canvas">canvas unsupported</canvas>
@@ -62,17 +62,17 @@ function handleDownload(blob, name) {
 
 function loadFile(file) {
 	return new Promise((resolve, reject) => {
-		// ƒtƒ@ƒCƒ‹“Çž
+		// ãƒ•ã‚¡ã‚¤ãƒ«èª­è¾¼
 		const reader = new FileReader();
 		reader.onload = () => {
-			// “Çž
+			// èª­è¾¼
 			const result = reader.result;
 			if (!result) {
 				reject("FileReader failed.");
 				return;
 			}
 
-			// ‰æ‘œ•\Ž¦
+			// ç”»åƒè¡¨ç¤º
 			const img = new Image();
 			img.onload = () => resolve(img);
 			img.onerror = (e) => reject(e);
