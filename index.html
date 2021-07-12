@@ -3,15 +3,15 @@
 1439 * 2331想定<br/>
 <input type="file" id="image_zone" multiple >
 <div id="output"></div>
-<canvas id="canvas">canvas unsupported</canvas>
+<canvas id="canvas" style="visibility:hidden;">canvas unsupported</canvas>
 
-<script src='https://unpkg.com/tesseract.js@v2.0.2/dist/tesseract.min.js'></script>
+<script src='https://unpkg.com/tesseract.js@v2.1.4/dist/tesseract.min.js'></script>
 <script>
 const imageZone = document.getElementById('image_zone')
 imageZone.addEventListener('change', resizePinnedImage, false)
 
 async function resizePinnedImage(e) {
-	document.getElementById('output').innerText += e.target.files.length + "/";
+	document.getElementById('output').innerText = ""; //e.target.files.length + "\n";
 				
 	var array = [];
 	for (const file of e.target.files) {
@@ -24,12 +24,13 @@ async function resizePinnedImage(e) {
 			image,
 			'jpn',
 			{
-				logger: m => console.log(m),
+				//logger: m => console.log(m),
 				tessedit_pageseg_mode: 5,
 			}).then(({ data: { text } }) => {
+				var name = text.replaceAll(" ","");
 				var blob = new Blob([file], { type: file.type });
-				array.push({name: text.replaceAll(" ",""), file: blob});
-				document.getElementById('output').innerText += "o";
+				array.push({name: name, file: blob});
+				document.getElementById('output').innerText += name + "\n";
 			}
 		);
 	}
@@ -99,18 +100,30 @@ function grayscale(img) {
 	for (var i = 0; i < height; i++) {
 		for (var j = 0; j < width; j++) {
 			var pix = (i*width + j) * 4;
-
-			/* Gray */
-			var gray = 0.299 * src.data[pix] + 0.587 * src.data[pix+1] + 0.114 * src.data[pix+2];
-
-			for (var k = 0; k < 3; k++) {
-				dst.data[pix+k] = src.data[pix+k] = gray;
+			
+			//if (src.data[pix] == 1 && src.data[pix+1] == 245 && src.data[pix+2] == 194 ) {
+			if (
+				(src.data[pix] >= 0 && src.data[pix] <= 10)
+				&& (src.data[pix+1] >= 240 && src.data[pix+1] <= 250)
+				&& (src.data[pix+2] >= 189 && src.data[pix+2] <= 199)
+			) {
+				for (var k = 0; k < 3; k++) {
+					dst.data[pix+k] = 0; //src.data[pix+k] 
+				}
+			} else {
+				/* Gray */
+				var gray = 0.299 * src.data[pix] + 0.587 * src.data[pix+1] + 0.114 * src.data[pix+2];
+				if (!(gray >= 175 && gray <= 190)) {
+					gray = 0;
+				}
+				for (var k = 0; k < 3; k++) {
+					dst.data[pix+k] = gray; //src.data[pix+k] 
+				}
 			}
-
 			dst.data[pix+3] = src.data[pix+3];
 		}
 	}
-
+	
 	canvas.width = 800;
 	canvas.height = 90;
 	ctx.putImageData(dst, 0, 0);
